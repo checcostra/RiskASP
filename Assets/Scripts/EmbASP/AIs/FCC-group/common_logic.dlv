@@ -5,7 +5,11 @@
 
 curr_turn(T, P) :- T = #max{Turn : turn(Turn,_) }, turn(T,P).
 
-enemy(P) :- player(P), curr_turn(T, Pl), P != Pl.
+curr_player(P) :- curr_turn(_, P).
+other_player(P) :- player(P), curr_player(CP), P != CP.
+
+% to make sure we can use optimization
+:~ true. [1@1]
 
 
 curr_player_territory(T, Territory, Troops) :- 
@@ -21,6 +25,22 @@ player_territories_count(T, Player, Count) :-
     curr_turn(T, _),
     player(Player),
     Count = #count{Territory : territory_control(T, Territory, Player, _)}.
+
+
+player_troops_count(T, Player, Count) :-
+    curr_turn(T, _),
+    player(Player),
+    Count = #sum{Troops, Territory : territory_control(T, Territory, Player, Troops)}.
+
+curr_player_troops_count(T, Player, Count) :-
+    player_troops_count(T, Player, Count),
+    curr_turn(T, Player).
+
+other_player_troops_count(T, Player, Count) :-
+    player_troops_count(T, Player, Count),
+    other_player(Player),
+    curr_turn(T, _).
+
 
 player_territories_in_continent(T, Player, Continent, Count) :-
     curr_turn(T, _),
@@ -111,6 +131,20 @@ difference_troops_territory(T, Territory, PlayerOwner, Diff) :-
     territory_control(T, Territory, PlayerOwner, Friendly),
     adjacent_enemy_troops(T, Territory, PlayerOwner, Enemies),
     Diff = Friendly - Enemies.
+
+difference_max_enemy_troops_territory(T, Territory, PlayerOwner, Diff) :- 
+    fronteer_territory(T, Territory, PlayerOwner),
+    territory_control(T, Territory, PlayerOwner, Friendly),
+    Enemies = #max{Troops, T1 : 
+        territory_control(T, T1, PlayerEnemy, Troops), 
+        connection(Territory, T1), 
+        PlayerEnemy != PlayerOwner},
+    Diff = Friendly - Enemies.
+
+difference_max_enemy_troops_territory(T, Territory, Player, Troops) :- 
+    internal_territory(T, Territory, Player),
+    territory_control(T, Territory, Player, Troops).
+
 
 difference_troops_territory_inverted(T, Territory, PlayerOwner, Diff) :- 
     territory_control(T, Territory, PlayerOwner, Friendly),
@@ -219,7 +253,9 @@ island_value_index(T, Id, Player, ValueIndex) :-
     ValueIndex = 1000 - Value.
 
 
-
+best_island_value(T, Id, Player, Value) :- 
+    island_value(T, Id, Player, Value),
+    Value = #max{ValueIndex1, Id1 : island_value(T, Id1, Player, ValueIndex1)}.
 
 
 island_weakest_fronteer_troops(T, Id, Player, MinTroops) :-

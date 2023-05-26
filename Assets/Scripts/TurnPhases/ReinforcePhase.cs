@@ -19,12 +19,20 @@ namespace TurnPhases
 
         public Action OnTroopsToPlaceChanged;
         public Action<ReinforceAction> OnTroopsPlaced;
+        public Action<ExchangeCardsAction> OnCardsExchanged;
 
 
         public ReinforcePhase(GameManager gm, CardRepository cardRepository)
         {
             _gm = gm;
             _cardRepository = cardRepository;
+
+            OnCardsExchanged += action =>
+            {
+                var msg = $"Player {action.Player.Name} exchanged cards for {action.Exchange.ExchangeValue} troops";
+                msg += action.Exchange.ExchangeType.ToString();
+                Debug.Log(msg);
+            };
         }
 
         public void Start(Player player)
@@ -43,6 +51,7 @@ namespace TurnPhases
                 _cardRepository.ReturnCardsToDeck(cardExchange.Cards);
                 _remainingTroopsToPlace += cardExchange.ExchangeValue;
                 
+                OnCardsExchanged?.Invoke(exchangeCardsAction);
                 OnTroopsToPlaceChanged?.Invoke();
             }
             else if (action is ReinforceAction placeTroopsAction)

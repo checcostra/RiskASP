@@ -127,6 +127,10 @@ end_attack(T, AT) :- has_won_territory(T, AT), can_attack(T, AT).
 
 :~ end_attack(T, AT), not has_won_territory(T, AT). [10@2]
 
+#show attack_reinforce/5.
+#show has_to_reinforce/4.
+#show attack/5.
+#show end_attack/2.
 
 % has_attacked_on_turn(T, AT) :- attack(T, AT, _, _, _).
 
@@ -140,6 +144,3 @@ end_attack(T, AT) :- has_won_territory(T, AT), can_attack(T, AT).
 
 %{ attack(T,AT,From1,To1,Troops1), end_attack(T,AT), attack_reinforce(T,AT,From2,To2,Troops2) } = 1 :- 
 
-
-a(1).
-:~ a(X). [1@1, X]

@@ -42,8 +42,6 @@ namespace player
 
         private void Awake()
         {
-            Debug.Log("BotBrain Awake");
-
             _gm = GameManager.Instance;
             SetupPhases();
             LoadExecutables();
@@ -109,12 +107,12 @@ namespace player
             currHandler.AddProgram(inputProgram);
             OnProgramLoaded?.Invoke(inputProgram);
 
-            // var callback = new PhasesCallback(this, botPlayer, player);
-            // _handler.StartAsync(callback);
+            var callback = new PhasesCallback(this, botPlayer, player);
+            currHandler.StartAsync(callback);
 
 
-            var output = currHandler.StartSync();
-            OnResponse(botPlayer, player, output);
+            // var output = currHandler.StartSync();
+            // OnResponse(botPlayer, player, output);
         }
 
         private class PhasesCallback : ICallback
@@ -146,10 +144,26 @@ namespace player
                 CurrentPhase.OnFailure(player);
                 return;
             }
+            if(output.ErrorsString.Length > 0)
+                Debug.LogWarning(GetCurrentPhaseInfo(botPlayer) + "\n" + output.ErrorsString);
 
+
+            
             IList<AnswerSet> answerSets;
             if (botPlayer.BotConfiguration.UseOptimalAnswerSet)
-                answerSets = outputAnswerSets.GetOptimalAnswerSets();
+            {
+                try
+                {
+                    answerSets = outputAnswerSets.GetOptimalAnswerSets();
+                }
+                catch (InvalidOperationException e)
+                {
+                    Debug.LogError(GetErrorMessage(botPlayer, output));
+                    Debug.LogError(e);
+                    CurrentPhase.OnFailure(player);
+                    throw;
+                }
+            }
             else
                 answerSets = outputAnswerSets.Answersets;
 
@@ -161,10 +175,6 @@ namespace player
                 return;
             }
             
-            if(output.ErrorsString.Length > 0)
-                Debug.LogWarning(GetCurrentPhaseInfo(botPlayer) + "\nerror: " + output.ErrorsString);
-
-
             var answerSet = answerSets[0];
             OnResponseLoaded?.Invoke(answerSet);
 
